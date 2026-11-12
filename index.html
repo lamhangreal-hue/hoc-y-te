@@ -388,6 +388,13 @@ html[data-theme="dark"] .block li{color:#dce6ec}
 html[data-theme="dark"] .block li b{color:#fff}
 html[data-theme="dark"] .block li::marker{color:#7f939e}
 html[data-theme="dark"] .block h3{color:#8ee04a}
+/* mid widths (tablet / small laptop): path stays on the left, lesson + practice stacked on the right */
+@media (min-width:821px) and (max-width:1100px){
+  .wrap .path{grid-column:1;grid-row:1 / span 2}
+  .wrap .lesson{grid-column:2;grid-row:1}
+  .wrap .practice{grid-column:2;grid-row:2;max-width:none;width:100%;border-left:none;border-top:2px solid var(--line);position:static;max-height:none;padding:22px 28px 60px}
+}
+@media (max-width:820px){ .wrap .practice{max-width:none;width:100%} .wrap .lesson{max-width:none} }
 /* smooth switch */
 html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{transition:background-color .3s,border-color .3s,color .3s!important}
 
