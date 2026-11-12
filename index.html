@@ -343,6 +343,11 @@ html[data-theme="dark"] .party::before{background:radial-gradient(ellipse at 50%
 @keyframes wiggle{from{transform:rotate(-4deg) scale(1)}to{transform:rotate(4deg) scale(1.06)}}
 @keyframes jumpy{from{transform:translateY(0)}to{transform:translateY(-8px)}}
 @keyframes partyOut{to{opacity:0}}
+@keyframes sheepWob{0%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}100%{transform:rotate(-14deg)}}
+.party .dog .wob{display:inline-block;animation:sheepWob .5s ease-in-out infinite}
+.party-sheep .cheer b{font-size:clamp(34px,8vw,84px)}
+.party-sheep::before{background:radial-gradient(ellipse at 50% 42%,rgba(255,255,255,.8) 0,rgba(255,255,255,.35) 35%,rgba(255,255,255,0) 70%)}
+html[data-theme="dark"] .party-sheep::before{background:radial-gradient(ellipse at 50% 42%,rgba(19,31,36,.85) 0,rgba(19,31,36,.35) 35%,rgba(19,31,36,0) 70%)}
 @media (prefers-reduced-motion:reduce){.party .dog{display:none}}
 
 
@@ -2447,6 +2452,7 @@ function drawSmc(){
       <div class="sb b"><div class="h">ĐỘ CHÍNH XÁC</div><div class="v">${Math.round(smc.correct/Q.length*100)}%</div></div></div>
       <button class="btn wide" id="smcAgain">LÀM BỘ CÂU HỎI MỚI</button>
       <button class="btn ghost wide" id="smcRead" style="margin-top:10px">XEM LẠI TÓM TẮT</button></div>`;
+    if(smc.correct>=8 && !smc.partied){ smc.partied = true; setTimeout(()=>dogParty(smc.correct, Q.length), 250); }
     document.getElementById('smcAgain').onclick=()=>{ smc=null; drawSmc(); };
     document.getElementById('smcRead').onclick=()=>{ show('Lesson'); const el=document.getElementById('sec-summary'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
     drawSubjects(); drawPath(); drawStats();
@@ -2499,7 +2505,7 @@ function drawExercise(){
       <button class="btn wide" id="again">LUYỆN LẠI</button>
       <button class="btn ghost wide" id="next" style="margin-top:10px">BÀI TIẾP THEO</button>
     </div>`;
-    if(quiz.correct===Q.length && !quiz.partied){ quiz.partied = true; setTimeout(dogParty, 250); }
+    if(quiz.correct>=7 && !quiz.partied){ quiz.partied = true; setTimeout(()=>dogParty(quiz.correct, Q.length), 250); }
     document.getElementById('again').onclick=()=>{ startQuiz(); drawAll(); };
     document.getElementById('next').onclick=()=>{
       const i = COURSE.findIndex(x=>x.id===cur);
@@ -2524,12 +2530,12 @@ function drawExercise(){
   }
   if(q.type==='drag'){
     const words = q.words;
+    if(!quiz.order || quiz.order.length!==words.length){ let o; do{ o = shuffle(words.map((_,i)=>i)); }while(words.length>2 && o.every((v,i)=>v===i)); quiz.order = o; }
     body = `<h3 class="qtitle">${q.prompt}</h3>
       <div class="answer-line" id="line">${quiz.placed.map(w=>
         `<button class="tile" data-rm="${w.i}">${w.t}</button>`).join('')}</div>
       <div class="answer-line second"></div>
-      <div class="bank">${words.map((w,i)=>
-        `<button class="tile ${quiz.placed.some(p=>p.i===i)?'ghosted':''}" data-add="${i}">${w}</button>`).join('')}</div>`;
+      <div class="bank">${quiz.order.map(i=>{ const w = words[i]; return `<button class="tile ${quiz.placed.some(p=>p.i===i)?'ghosted':''}" data-add="${i}">${w}</button>`; }).join('')}</div>`;
   }
 
   box.innerHTML = `
@@ -2599,7 +2605,7 @@ function drawExercise(){
       : `<h4>✕ Chưa đúng</h4><p>Đáp án đúng: <span style="text-decoration:underline">${right}</span><br>${q.hint}</p>`;
     check.textContent='TIẾP TỤC';
     if(!ok) check.style.background='var(--red)', check.style.boxShadow='0 4px 0 var(--red-d)';
-    check.onclick = ()=>{ quiz.i++; quiz.checked=false; quiz.sel=null; quiz.placed=[]; drawQuiz(); drawStats(); };
+    check.onclick = ()=>{ quiz.i++; quiz.checked=false; quiz.sel=null; quiz.placed=[]; quiz.order=null; drawQuiz(); drawStats(); };
   };
 }
 
@@ -2643,6 +2649,7 @@ const SFX = (()=>{
     flip(){ tone(300,0,.12,{type:'sine',vol:.08,slide:2.4}); },
     know(){ tone(880,0,.08,{type:'triangle',vol:.12}); tone(1175,.06,.12,{type:'triangle',vol:.12}); },
     again(){ tone(392,0,.1,{type:'triangle',vol:.10,slide:.8}); },
+    baa(){ tone(520,0,.32,{type:'sawtooth',vol:.06,slide:.82}); tone(530,.02,.3,{type:'triangle',vol:.05,slide:.8}); tone(470,.36,.38,{type:'sawtooth',vol:.05,slide:.75}); },
     party(){ [784,988,1175,1568,1175,1568].forEach((f,i)=>tone(f,i*.08,.12,{type:'square',vol:.06})); tone(330,.55,.09,{type:'sawtooth',vol:.09,slide:.6}); tone(330,.72,.09,{type:'sawtooth',vol:.09,slide:.6}); },
     finish(){ [523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.18,{type:'triangle',vol:.18})); tone(1319,.42,.45,{type:'triangle',vol:.16}); tone(1568,.42,.45,{type:'sine',vol:.06}); },
   };
@@ -2685,30 +2692,47 @@ const SFX = (()=>{
 })();
 
 
-/* ================= 9/9 celebration ================= */
-function dogParty(){
-  if(document.querySelector('.party')) return;
-  const dogs = ['🐶','🐕','🐩','🦮','🐕‍🦺','🐶','🐶'];
-  const cheers = ['Quá dỏiiiii!','Đỉnh của chóp!','Xuất sắc luôn!','9/9 quá đã!','Giỏi quá trời!'];
-  const subs = ['Không sai câu nào 🎉','Thủ khoa tương lai đây rồi 🏆','Cả đàn cún chạy ra chúc mừng nè 🐾'];
-  const wrap = document.createElement('div'); wrap.className='party';
+/* ================= celebrations ================= */
+function emojiParade({emojis, cheers, sub, sound, n, rotate=true, ms=5200, kind='dog'}){
+  if(document.querySelector('.party')) return false;
+  const wrap = document.createElement('div'); wrap.className='party party-'+kind;
   let html = '';
-  const n = window.innerWidth < 600 ? 22 : 34;
-  for(let i=0;i<n;i++){
+  const count = n || (window.innerWidth < 600 ? 22 : 34);
+  for(let i=0;i<count;i++){
     const rev = Math.random()<.35, sz = 30+Math.random()*44, top = 4+Math.random()*86;
-    const dur = 2.2+Math.random()*2.6, delay = Math.random()*2.2, spin = (Math.random()<.5?'':'-')+(0.7+Math.random()*1.4);
-    html += `<div class="dog${rev?' rev':''}" style="top:${top}vh;--sz:${sz}px;--dur:${dur}s;--delay:${delay}s;--spin:${Math.abs(spin)}s">
-      <span class="hop" style="animation-delay:${(Math.random()*.4).toFixed(2)}s"><span class="spin" style="animation-direction:${spin<0?'reverse':'normal'}"><span class="face">${dogs[i%dogs.length]}</span></span></span></div>`;
+    const dur = 2.2+Math.random()*2.6, delay = Math.random()*2.2, sp = 0.7+Math.random()*1.4, back = Math.random()<.5;
+    html += `<div class="dog${rev?' rev':''}" style="top:${top}vh;--sz:${sz}px;--dur:${dur}s;--delay:${delay}s;--spin:${sp}s">
+      <span class="hop" style="animation-delay:${(Math.random()*.4).toFixed(2)}s"><span class="${kind==='sheep'?'wob':'spin'}" style="animation-direction:${back?'reverse':'normal'}"><span class="face">${emojis[i%emojis.length]}</span></span></span></div>`;
   }
-  html += `<div class="cheer"><b>${cheers[0]}</b><span>${subs[Math.floor(Math.random()*subs.length)]}</span></div>`;
+  html += `<div class="cheer"><b>${cheers[0]}</b>${sub?`<span>${sub}</span>`:''}</div>`;
   wrap.innerHTML = html;
   document.body.appendChild(wrap);
-  if(window.SFX){ SFX.play('finish'); setTimeout(()=>SFX.play('party'),650); }
+  if(window.SFX && sound) sound();
   const end = ()=>{ if(!wrap.isConnected) return; wrap.classList.add('out'); setTimeout(()=>wrap.remove(),500); };
-  setTimeout(end, 5200);
-  setTimeout(()=>{ const c = wrap.querySelector('.cheer b'); if(c) c.textContent = cheers[1+Math.floor(Math.random()*(cheers.length-1))]; }, 2600);
-  document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once); setTimeout(end, 150); });
+  setTimeout(end, ms);
+  if(rotate && cheers.length>1) setTimeout(()=>{ const c = wrap.querySelector('.cheer b'); if(c) c.textContent = cheers[1+Math.floor(Math.random()*(cheers.length-1))]; }, ms/2);
+  setTimeout(()=>document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once); setTimeout(end, 150); }), 300);
+  return true;
 }
+function dogParty(score, total){
+  emojiParade({
+    emojis:['🐶','🐕','🐩','🦮','🐕‍🦺','🐶','🐶'],
+    cheers:['Quá dỏiiiii!','Đỉnh của chóp!','Xuất sắc luôn!',`${score}/${total} quá đã!`,'Giỏi quá trời!'],
+    sub:'Cả đàn cún ra chúc mừng qìn nèee 🐾',
+    sound:()=>{ SFX.play('finish'); setTimeout(()=>SFX.play('party'),650); }
+  });
+}
+/* sheep cheer: 1 minute after opening, then every 10 minutes */
+const SHEEP_LINES = ['Qìn cố lênnnnnnnn','Hôm nay qìn làm tốt hơn hum qua ùiii','hwaitting!','Chăm chỉ dog thuii'];
+let sheepLast = -1;
+function sheepCheer(){
+  if(document.hidden) return;
+  let k; do{ k = Math.floor(Math.random()*SHEEP_LINES.length); }while(k===sheepLast && SHEEP_LINES.length>1);
+  sheepLast = k;
+  emojiParade({ kind:'sheep', emojis:['🐑','🐏','🐑','🐑'], cheers:[SHEEP_LINES[k]], rotate:false, ms:5600,
+    n: window.innerWidth < 600 ? 14 : 22, sound:()=>SFX.play('baa') });
+}
+setTimeout(()=>{ sheepCheer(); setInterval(sheepCheer, 10*60*1000); }, 60*1000);
 
 
 (function wireTheme(){
