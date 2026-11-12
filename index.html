@@ -314,6 +314,38 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 
+/* ---------- 9/9 dog party ---------- */
+.party{position:fixed;inset:0;z-index:999;pointer-events:none;overflow:hidden}
+.party::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%,rgba(255,255,255,.9) 0,rgba(255,255,255,.55) 38%,rgba(255,255,255,.12) 75%);animation:partyIn .35s ease-out both}
+html[data-theme="dark"] .party::before{background:radial-gradient(ellipse at 50% 42%,rgba(19,31,36,.92) 0,rgba(19,31,36,.6) 38%,rgba(19,31,36,.15) 75%)}
+@keyframes partyIn{from{opacity:0}}
+.party .dog{position:absolute;left:0;font-size:var(--sz,44px);line-height:1;will-change:transform;
+  animation:dogRun var(--dur,3.2s) linear var(--delay,0s) both}
+.party .dog.rev{animation-name:dogRunRev}
+.party .dog .hop{display:inline-block;animation:dogHop .42s ease-in-out infinite alternate}
+.party .dog .spin{display:inline-block;animation:dogSpin var(--spin,1.1s) linear infinite}
+.party .dog.rev .face{display:inline-block;transform:scaleX(-1)}
+@keyframes dogRun{from{transform:translateX(-15vw)}to{transform:translateX(112vw)}}
+@keyframes dogRunRev{from{transform:translateX(112vw)}to{transform:translateX(-15vw)}}
+@keyframes dogHop{from{transform:translateY(0)}to{transform:translateY(-34px)}}
+@keyframes dogSpin{to{transform:rotate(360deg)}}
+.party .cheer{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;width:min(92vw,720px);
+  animation:cheerIn .7s cubic-bezier(.2,1.6,.4,1) both}
+.party .cheer b{display:block;font-size:clamp(46px,11vw,112px);font-weight:900;line-height:1.05;letter-spacing:1px;
+  background:linear-gradient(90deg,#ff4b4b,#ff9600,#ffc800,#58cc02,#1cb0f6,#ce82ff,#ff4b4b);background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px rgba(0,0,0,.08);
+  filter:drop-shadow(0 6px 0 rgba(0,0,0,.15));animation:rainbow 1.6s linear infinite,wiggle .5s ease-in-out infinite alternate}
+.party .cheer span{display:inline-block;margin-top:10px;padding:8px 18px;border-radius:999px;background:var(--green);color:#fff;
+  font-size:clamp(16px,3.6vw,22px);font-weight:900;box-shadow:0 4px 0 var(--green-t);animation:jumpy .6s ease-in-out infinite alternate}
+.party.out{animation:partyOut .5s ease-in forwards}
+@keyframes cheerIn{from{transform:translate(-50%,-50%) scale(.2) rotate(-12deg);opacity:0}to{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}}
+@keyframes rainbow{to{background-position:300% 0}}
+@keyframes wiggle{from{transform:rotate(-4deg) scale(1)}to{transform:rotate(4deg) scale(1.06)}}
+@keyframes jumpy{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+@keyframes partyOut{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.party .dog{display:none}}
+
+
 /* ---------- dark theme ---------- */
 :root{--surface:#fff;--back:#f7fbff;--back-line:#cfe9fb;--purple-l:#f6ecff;--shadow-node:#b8b8b8}
 html[data-theme="dark"]{
@@ -2467,6 +2499,7 @@ function drawExercise(){
       <button class="btn wide" id="again">LUYỆN LẠI</button>
       <button class="btn ghost wide" id="next" style="margin-top:10px">BÀI TIẾP THEO</button>
     </div>`;
+    if(quiz.correct===Q.length && !quiz.partied){ quiz.partied = true; setTimeout(dogParty, 250); }
     document.getElementById('again').onclick=()=>{ startQuiz(); drawAll(); };
     document.getElementById('next').onclick=()=>{
       const i = COURSE.findIndex(x=>x.id===cur);
@@ -2610,6 +2643,7 @@ const SFX = (()=>{
     flip(){ tone(300,0,.12,{type:'sine',vol:.08,slide:2.4}); },
     know(){ tone(880,0,.08,{type:'triangle',vol:.12}); tone(1175,.06,.12,{type:'triangle',vol:.12}); },
     again(){ tone(392,0,.1,{type:'triangle',vol:.10,slide:.8}); },
+    party(){ [784,988,1175,1568,1175,1568].forEach((f,i)=>tone(f,i*.08,.12,{type:'square',vol:.06})); tone(330,.55,.09,{type:'sawtooth',vol:.09,slide:.6}); tone(330,.72,.09,{type:'sawtooth',vol:.09,slide:.6}); },
     finish(){ [523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.18,{type:'triangle',vol:.18})); tone(1319,.42,.45,{type:'triangle',vol:.16}); tone(1568,.42,.45,{type:'sine',vol:.06}); },
   };
   return {
@@ -2649,6 +2683,32 @@ const SFX = (()=>{
     });
   }).observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['class']});
 })();
+
+
+/* ================= 9/9 celebration ================= */
+function dogParty(){
+  if(document.querySelector('.party')) return;
+  const dogs = ['🐶','🐕','🐩','🦮','🐕‍🦺','🐶','🐶'];
+  const cheers = ['Quá dỏiiiii!','Đỉnh của chóp!','Xuất sắc luôn!','9/9 quá đã!','Giỏi quá trời!'];
+  const subs = ['Không sai câu nào 🎉','Thủ khoa tương lai đây rồi 🏆','Cả đàn cún chạy ra chúc mừng nè 🐾'];
+  const wrap = document.createElement('div'); wrap.className='party';
+  let html = '';
+  const n = window.innerWidth < 600 ? 22 : 34;
+  for(let i=0;i<n;i++){
+    const rev = Math.random()<.35, sz = 30+Math.random()*44, top = 4+Math.random()*86;
+    const dur = 2.2+Math.random()*2.6, delay = Math.random()*2.2, spin = (Math.random()<.5?'':'-')+(0.7+Math.random()*1.4);
+    html += `<div class="dog${rev?' rev':''}" style="top:${top}vh;--sz:${sz}px;--dur:${dur}s;--delay:${delay}s;--spin:${Math.abs(spin)}s">
+      <span class="hop" style="animation-delay:${(Math.random()*.4).toFixed(2)}s"><span class="spin" style="animation-direction:${spin<0?'reverse':'normal'}"><span class="face">${dogs[i%dogs.length]}</span></span></span></div>`;
+  }
+  html += `<div class="cheer"><b>${cheers[0]}</b><span>${subs[Math.floor(Math.random()*subs.length)]}</span></div>`;
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap);
+  if(window.SFX){ SFX.play('finish'); setTimeout(()=>SFX.play('party'),650); }
+  const end = ()=>{ if(!wrap.isConnected) return; wrap.classList.add('out'); setTimeout(()=>wrap.remove(),500); };
+  setTimeout(end, 5200);
+  setTimeout(()=>{ const c = wrap.querySelector('.cheer b'); if(c) c.textContent = cheers[1+Math.floor(Math.random()*(cheers.length-1))]; }, 2600);
+  document.addEventListener('pointerdown', function once(){ document.removeEventListener('pointerdown', once); setTimeout(end, 150); });
+}
 
 
 (function wireTheme(){
