@@ -9,6 +9,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+<script>
+(function(){ var t=null; try{ t=localStorage.getItem('hbu-theme'); }catch(e){}
+  if(!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t); })();
+</script>
 <style>
 :root{
   --green:#58cc02; --green-d:#4aa802; --green-l:#d7ffb8; --green-t:#58a700;
@@ -308,6 +313,42 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
 @media (max-width:360px){ .brand > div:last-child{display:none} }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+
+/* ---------- dark theme ---------- */
+:root{--surface:#fff;--back:#f7fbff;--back-line:#cfe9fb;--purple-l:#f6ecff;--shadow-node:#b8b8b8}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --ink:#f1f7fb; --ink-2:#c3d0d8; --ink-3:#7f939e;
+  --line:#37464f; --line-2:#52656f; --bg:#131f24; --panel:#1b2b32; --surface:#131f24;
+  --green-l:#1f3b17;
+  --blue-l:#173847;
+  --red-l:#3d1d20; --red-t:#ff7878;
+  --purple-l:#33244a;
+  --back:#16303b; --back-line:#2a5568; --shadow-node:#2b3a41;
+}
+html[data-theme="dark"] .top,html[data-theme="dark"] .path,html[data-theme="dark"] .practice,
+html[data-theme="dark"] .card,html[data-theme="dark"] .btn.ghost,html[data-theme="dark"] .opt,
+html[data-theme="dark"] .tile,html[data-theme="dark"] .subj,html[data-theme="dark"] .deckpick button,
+html[data-theme="dark"] .fface,html[data-theme="dark"] .sound-btn,html[data-theme="dark"] .tabs,
+html[data-theme="dark"] .startpill,html[data-theme="dark"] .sb{background:var(--surface)}
+html[data-theme="dark"] .pmodes button.on{background:var(--line)}
+html[data-theme="dark"] .deckpick button.on{background:var(--purple-l)}
+html[data-theme="dark"] .fface.back{background:var(--back);border-color:var(--back-line)}
+html[data-theme="dark"] .fface.back{scrollbar-color:var(--back-line) transparent}
+html[data-theme="dark"] .fface.back::-webkit-scrollbar-thumb{background:var(--back-line);background-clip:padding-box}
+html[data-theme="dark"] .node.active .bubble{outline-color:var(--bg)}
+html[data-theme="dark"] .node:not(.on):not(.done) .bubble{box-shadow:0 6px 0 var(--shadow-node)}
+html[data-theme="dark"] .feedback.ok{color:#8ee04a}
+html[data-theme="dark"] .opt.right,html[data-theme="dark"] .sb.b .v{color:#8ee04a}
+html[data-theme="dark"] .opt.sel,html[data-theme="dark"] .subj.on,html[data-theme="dark"] .alt,html[data-theme="dark"] .bk-h{color:#5cc8fa}
+html[data-theme="dark"] .crown{border-color:var(--bg)}
+html[data-theme="dark"] .btn[disabled]{background:var(--line);color:var(--ink-3)}
+html[data-theme="dark"] .subj.on{background:var(--blue-l);color:var(--blue-d)}
+html[data-theme="dark"] .feedback.ok h4,html[data-theme="dark"] .feedback.no h4{filter:none}
+html[data-theme="dark"] img{opacity:.92}
+/* smooth switch */
+html.theme-anim *,html.theme-anim *::before,html.theme-anim *::after{transition:background-color .3s,border-color .3s,color .3s!important}
+
 /* ---------- mobile ---------- */
 .tabs{display:none}
 @media (max-width:1100px){
@@ -346,6 +387,7 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
     <div class="stat fire" title="Chuỗi ngày học"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s5 5 5 9a5 5 0 0 1-10 0c0-1 .3-2 .8-2.8C8 9.7 8 11 9 11c1.3 0 1-2.2 1-3.5C10 5 12 2 12 2z"/><path d="M12 22a6 6 0 0 1-6-6c0-2 1-3.5 2-5 0 3 2 4 4 4s4-1 4-4c1 1.5 2 3 2 5a6 6 0 0 1-6 6z" opacity=".55"/></svg><span id="streakN">0</span></div>
     <div class="stat gem" title="Tổng XP"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 9l9 13 9-13-9-7z"/></svg><span id="xpN">0</span></div>
     <div class="stat heart" title="Tim không giới hạn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-5.1-8-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 3.6C20 15.9 12 21 12 21z"/></svg><span class="inf">∞</span></div>
+    <button class="sound-btn" id="themeBtn" title="Giao diện sáng / tối">🌙</button>
     <button class="sound-btn" id="soundBtn" title="Bật/tắt âm thanh">🔊</button>
   </div>
 </div>
@@ -2594,6 +2636,20 @@ const SFX = (()=>{
       if(seen.has(f)) return; seen.add(f); setTimeout(()=>SFX.play('finish'), 120);
     });
   }).observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['class']});
+})();
+
+
+(function wireTheme(){
+  const btn = document.getElementById('themeBtn'), root = document.documentElement;
+  const paint = ()=>{ const d = root.getAttribute('data-theme')==='dark'; btn.textContent = d ? '☀️' : '🌙'; btn.title = d ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'; };
+  paint();
+  btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    const next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+    root.classList.add('theme-anim'); root.setAttribute('data-theme', next);
+    try{ localStorage.setItem('hbu-theme', next); }catch(e){}
+    paint(); setTimeout(()=>root.classList.remove('theme-anim'), 350);
+  });
 })();
 
 (async()=>{ await load(); startQuiz(); drawAll(); })();
