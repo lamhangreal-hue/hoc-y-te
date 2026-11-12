@@ -273,6 +273,41 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
 @media (max-width:820px){ .wrap .path{overflow-x:hidden} .fcard{min-height:230px} .pmodes{margin-bottom:12px} }
 .smc-src{margin-top:10px;font-size:13px;font-weight:600;line-height:1.5;color:var(--ink-2)}
 
+
+/* ---------- motion: hover lift + press sink ---------- */
+.btn,.opt,.tile,.subj,.deckpick button,.pmodes button,.fctools button,.px,.sound-btn,.tabs button,.node .bubble{
+  transition:transform .14s cubic-bezier(.3,.7,.4,1.4),box-shadow .12s,filter .15s,background-color .15s,border-color .15s}
+@media (hover:hover){
+  .btn:not(:disabled):hover{transform:translateY(-2px);filter:brightness(1.06)}
+  .opt:hover,.tile:not(.ghosted):hover,.subj:hover,.deckpick button:hover{transform:translateY(-2px);border-bottom-width:5px}
+  .pmodes button:hover,.fctools button:hover,.sound-btn:hover{transform:scale(1.06)}
+  .node:hover .bubble{transform:translateY(-4px) scale(1.04)}
+  .tabs button:hover svg{transform:scale(1.12)}
+}
+.btn:not(:disabled):active{transform:translateY(4px) scale(.98);box-shadow:0 0 0 transparent!important;filter:brightness(.97)}
+.opt:active,.tile:not(.ghosted):active,.subj:active,.deckpick button:active{transform:translateY(3px);border-bottom-width:2px}
+.pmodes button:active,.fctools button:active,.sound-btn:active,.px:active{transform:scale(.92)}
+.node:active .bubble{transform:translateY(5px) scale(.96)}
+.tabs button svg{transition:transform .15s}
+.tabs button:active svg{transform:scale(.85)}
+.btn:disabled{transition:none}
+/* answer reactions */
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(4px)}}
+@keyframes bounceIn{0%{transform:translateY(16px);opacity:0}60%{transform:translateY(-4px);opacity:1}100%{transform:translateY(0)}}
+@keyframes jump{0%,100%{transform:translateY(0) scale(1)}35%{transform:translateY(-14px) scale(1.12)}70%{transform:translateY(2px) scale(.97)}}
+.opt.right{animation:pop .35s ease-out}
+.opt.wrong{animation:shake .4s ease-out}
+.feedback.show{animation:bounceIn .35s cubic-bezier(.3,.7,.4,1.3)}
+.feedback.ok h4,.feedback.no h4{display:flex}
+.finish > div:first-child{display:inline-block;animation:jump .7s ease-out .1s 2}
+.tile.just{animation:pop .22s ease-out}
+.fx-sel{animation:pop .2s ease-out}
+.sound-btn{display:grid;place-items:center;width:34px;height:34px;border-radius:12px;border:2px solid var(--line);border-bottom-width:3px;font-size:16px;background:#fff}
+@media (max-width:820px){ .top .stats .stat.heart{display:none} .top .stats{flex-wrap:nowrap} .brand{font-size:13px;gap:8px;min-width:0} .stats{gap:9px;font-size:14px} .stat svg{width:18px;height:18px} .sound-btn{width:30px;height:30px;font-size:14px;border-radius:10px} }
+@media (max-width:360px){ .brand > div:last-child{display:none} }
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
 /* ---------- mobile ---------- */
 .tabs{display:none}
 @media (max-width:1100px){
@@ -311,6 +346,7 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
     <div class="stat fire" title="Chuỗi ngày học"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s5 5 5 9a5 5 0 0 1-10 0c0-1 .3-2 .8-2.8C8 9.7 8 11 9 11c1.3 0 1-2.2 1-3.5C10 5 12 2 12 2z"/><path d="M12 22a6 6 0 0 1-6-6c0-2 1-3.5 2-5 0 3 2 4 4 4s4-1 4-4c1 1.5 2 3 2 5a6 6 0 0 1-6 6z" opacity=".55"/></svg><span id="streakN">0</span></div>
     <div class="stat gem" title="Tổng XP"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 9l9 13 9-13-9-7z"/></svg><span id="xpN">0</span></div>
     <div class="stat heart" title="Tim không giới hạn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-5.1-8-10.4A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8 3.6C20 15.9 12 21 12 21z"/></svg><span class="inf">∞</span></div>
+    <button class="sound-btn" id="soundBtn" title="Bật/tắt âm thanh">🔊</button>
   </div>
 </div>
 
@@ -2495,6 +2531,70 @@ function show(tab){
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+
+
+/* ================= sound effects (Web Audio, synthesized) ================= */
+const SFX = (()=>{
+  let ctx = null, on = true;
+  try{ on = localStorage.getItem('hbu-sound') !== 'off'; }catch(e){}
+  const ac = ()=>{ if(!ctx){ const C = window.AudioContext||window.webkitAudioContext; if(!C) return null; ctx = new C(); } if(ctx.state==='suspended') ctx.resume(); return ctx; };
+  function tone(freq, start, dur, {type='sine', vol=.18, slide=0}={}){
+    const c = ac(); if(!c) return;
+    const t = c.currentTime + start, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(freq*slide, t+dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+0.02);
+  }
+  const play = {
+    tap(){ tone(520,0,.07,{type:'triangle',vol:.10,slide:1.6}); },
+    select(){ tone(660,0,.06,{type:'triangle',vol:.10}); tone(880,.03,.07,{type:'triangle',vol:.07}); },
+    correct(){ tone(784,0,.12,{type:'triangle',vol:.20}); tone(1047,.09,.22,{type:'triangle',vol:.20}); tone(1568,.09,.22,{type:'sine',vol:.05}); },
+    wrong(){ tone(233,0,.16,{type:'sawtooth',vol:.07,slide:.85}); tone(185,.12,.24,{type:'sawtooth',vol:.07,slide:.8}); },
+    flip(){ tone(300,0,.12,{type:'sine',vol:.08,slide:2.4}); },
+    know(){ tone(880,0,.08,{type:'triangle',vol:.12}); tone(1175,.06,.12,{type:'triangle',vol:.12}); },
+    again(){ tone(392,0,.1,{type:'triangle',vol:.10,slide:.8}); },
+    finish(){ [523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.18,{type:'triangle',vol:.18})); tone(1319,.42,.45,{type:'triangle',vol:.16}); tone(1568,.42,.45,{type:'sine',vol:.06}); },
+  };
+  return {
+    play(name){ if(on && play[name]) try{ play[name](); }catch(e){} },
+    get on(){ return on; },
+    toggle(){ on=!on; try{ localStorage.setItem('hbu-sound', on?'on':'off'); }catch(e){} return on; }
+  };
+})();
+
+(function wireFx(){
+  const sb = document.getElementById('soundBtn');
+  const paint = ()=>{ sb.textContent = SFX.on ? '🔊' : '🔇'; };
+  paint();
+  sb.addEventListener('click', e=>{ e.stopPropagation(); SFX.toggle(); paint(); SFX.play('tap'); });
+
+  // click sounds (capture phase so they fire before re-render)
+  document.addEventListener('click', e=>{
+    const el = e.target.closest('button,.node,.fcard');
+    if(!el || el.id==='soundBtn' || el.disabled) return;
+    if(el.id==='check' && /KIỂM TRA/.test(el.textContent)) return;   // answer sound handles it
+    if(el.id==='fcard' || el.classList.contains('fcard')) return SFX.play('flip');
+    if(el.id==='fcYes') return SFX.play('know');
+    if(el.id==='fcNo') return SFX.play('again');
+    if(el.classList.contains('opt') || el.hasAttribute('data-add')) { el.classList.remove('fx-sel'); void el.offsetWidth; el.classList.add('fx-sel'); return SFX.play('select'); }
+    SFX.play('tap');
+  }, true);
+
+  // answer + finish sounds: watch the practice column for feedback / finish screens
+  const seen = new WeakSet();
+  new MutationObserver(()=>{
+    document.querySelectorAll('.feedback.show').forEach(fb=>{
+      if(seen.has(fb)) return; seen.add(fb);
+      SFX.play(fb.classList.contains('ok') ? 'correct' : 'wrong');
+    });
+    document.querySelectorAll('.finish').forEach(f=>{
+      if(seen.has(f)) return; seen.add(f); setTimeout(()=>SFX.play('finish'), 120);
+    });
+  }).observe(document.body, {subtree:true, childList:true, attributes:true, attributeFilter:['class']});
+})();
 
 (async()=>{ await load(); startQuiz(); drawAll(); })();
 </script>
