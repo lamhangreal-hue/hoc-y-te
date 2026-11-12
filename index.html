@@ -231,6 +231,38 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
   .path,.practice{top:0}
 }
 
+
+/* ---------- practice modes ---------- */
+.qtitle .gap{color:var(--blue-d);letter-spacing:2px}
+.pmodes{display:flex;gap:6px;margin:0 0 18px;padding:4px;border:2px solid var(--line);border-radius:16px;background:var(--panel)}
+.pmodes button{flex:1;border-radius:12px;padding:9px 6px;font-size:12.5px;font-weight:900;color:var(--ink-3);letter-spacing:.3px;line-height:1.2}
+.pmodes button.on{background:#fff;color:var(--blue-d);box-shadow:0 2px 0 var(--line)}
+.deckpick{display:flex;gap:8px;margin-bottom:14px}
+.deckpick button{flex:1;border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;padding:9px;font-size:13px;font-weight:900;color:var(--ink-2);background:#fff}
+.deckpick button.on{border-color:var(--purple);background:#f6ecff;color:var(--purple-d)}
+.fcmeta{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--ink-3);margin:0 2px 8px;letter-spacing:.4px}
+.fcwrap{perspective:1200px;margin-bottom:16px}
+.fcard{position:relative;width:100%;min-height:290px;transition:transform .45s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d;cursor:pointer}
+.fcard.flip{transform:rotateY(180deg)}
+.fface{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:2px solid var(--line);border-bottom-width:5px;border-radius:22px;padding:22px 20px;display:flex;flex-direction:column;background:#fff;overflow:auto}
+.fface.front{align-items:center;justify-content:center;text-align:center}
+.fface.back{transform:rotateY(180deg);background:#f7fbff;border-color:#cfe9fb}
+.fface .kind{position:absolute;top:12px;left:14px;font-size:11px;font-weight:900;letter-spacing:1px;color:var(--ink-3)}
+.fface .term{font-size:24px;font-weight:900;line-height:1.3}
+.fface .alt{margin-top:8px;font-size:14px;font-weight:800;color:var(--blue-d)}
+.fface .tap{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;font-weight:800;color:var(--ink-3)}
+.fface .bk-h{font-size:15px;font-weight:900;color:var(--blue-d);margin:14px 0 8px}
+.fface .bk-t{font-size:16px;font-weight:700;line-height:1.55;color:var(--ink)}
+.fface ul{margin:0;padding-left:18px}
+.fface li{font-size:14px;font-weight:600;line-height:1.5;margin-bottom:6px;color:var(--ink-2)}
+.fcbtns{display:flex;gap:10px}
+.fcbtns .btn{flex:1}
+.btn.red{background:var(--red);box-shadow:0 4px 0 var(--red-d)}
+.fctools{display:flex;justify-content:center;gap:18px;margin-top:14px}
+.fctools button{font-size:13px;font-weight:900;color:var(--blue-d);letter-spacing:.3px}
+@media (max-width:820px){ .fcard{min-height:230px} .pmodes{margin-bottom:12px} }
+.smc-src{margin-top:10px;font-size:13px;font-weight:600;line-height:1.5;color:var(--ink-2)}
+
 /* ---------- mobile ---------- */
 .tabs{display:none}
 @media (max-width:1100px){
@@ -2150,23 +2182,175 @@ function drawLesson(){
       <h2><span class="secno">3</span>Luyện tập</h2>
       <p class="sub">9 câu hỏi — trắc nghiệm, điền vào chỗ trống và sắp xếp câu.</p>
       <button class="btn blue" id="goPractice">BẮT ĐẦU LUYỆN TẬP</button>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" style="flex:1" id="goFlash">🃏 FLASHCARD</button><button class="btn ghost" style="flex:1" id="goSmc">📝 TRẮC NGHIỆM TÓM TẮT</button></div>
     </section>`;
 
   document.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{
     markDone(cur,b.dataset.done,10); drawAll();
   });
-  document.getElementById('goPractice').onclick=()=>{ show('Practice'); document.getElementById('colPractice').scrollTop=0; };
+  const openMode = m => { pmode=m; drawQuiz(); show('Practice'); const c=document.getElementById('colPractice'); c.scrollTop=0; if(window.innerWidth>820&&window.innerWidth<=1100) c.scrollIntoView({behavior:'smooth',block:'start'}); };
+  document.getElementById('goPractice').onclick=()=>openMode('quiz');
+  document.getElementById('goFlash').onclick=()=>openMode('flash');
+  document.getElementById('goSmc').onclick=()=>openMode('smc');
 }
 
 /* ================= quiz ================= */
+let pmode = 'quiz', fc = null, smc = null;
 function startQuiz(){
   quiz = { i:0, correct:0, checked:false, sel:null, placed:[], xp:0 };
+  pmode = 'quiz'; fc = null; smc = null;
+}
+const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const strip = h => String(h).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+
+function drawQuiz(){
+  const box = document.getElementById('colPractice');
+  const modes = [['quiz','✦ Bài tập'],['flash','🃏 Flashcard'],['smc','📝 Trắc nghiệm']];
+  box.innerHTML = `<div class="pmodes">${modes.map(([m,l])=>`<button data-pm="${m}" class="${pmode===m?'on':''}">${l}</button>`).join('')}</div><div id="pbody"></div>`;
+  box.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{ pmode=b.dataset.pm; drawQuiz(); box.scrollTop=0; });
+  if(pmode==='flash') return drawFlash();
+  if(pmode==='smc') return drawSmc();
+  drawExercise();
+}
+
+/* ---------- flashcards ---------- */
+function buildDeck(s, deck){
+  if(deck==='vocab') return s.vocab.map((v,i)=>({id:'v'+i, kind:'TỪ VỰNG', front:`<div class="term">${v.term}</div>${v.alt?`<div class="alt">${v.alt}</div>`:''}`, back:`<div class="bk-h">${v.term}</div><div class="bk-t">${v.note}</div>`}));
+  return s.summary.map((sec,i)=>({id:'l'+i, kind:'BÀI HỌC · '+(i+1)+'/'+s.summary.length, front:`<div class="term" style="font-size:21px">${sec.heading}</div><div class="alt">Nhớ lại các ý chính rồi lật thẻ</div>`, back:`<div class="bk-h">${sec.heading}</div><ul>${sec.points.map(p=>`<li>${p}</li>`).join('')}</ul>`}));
+}
+function startFlash(deck){
+  const s = sess(cur), cards = buildDeck(s, deck);
+  fc = { sid:s.id, deck, cards, queue: cards.map((_,i)=>i), known:0, again:0, flipped:false, xp:0 };
+}
+function drawFlash(){
+  const s = sess(cur), body = document.getElementById('pbody');
+  if(!fc || fc.sid!==s.id) startFlash(fc ? fc.deck : 'vocab');
+  const tabs = `<div class="deckpick"><button data-deck="vocab" class="${fc.deck==='vocab'?'on':''}">Từ vựng · ${s.vocab.length}</button><button data-deck="lesson" class="${fc.deck==='lesson'?'on':''}">Bài học · ${s.summary.length}</button></div>`;
+  const total = fc.cards.length;
+  if(!fc.queue.length){
+    const key = fc.deck==='vocab' ? 'fc_vocab' : 'fc_lesson';
+    const gained = markDone(s.id, key, 10) ? 10 : 0;
+    body.innerHTML = tabs + `<div class="finish">
+      <div style="font-size:46px">🎉</div>
+      <div class="big">Đã thuộc hết ${total} thẻ!</div>
+      <p>${s.title} · ${fc.deck==='vocab'?'Từ vựng':'Bài học'}${fc.again?` · ôn lại ${fc.again} lần`:''}</p>
+      <div class="scorebox"><div class="sb"><div class="h">XP</div><div class="v">+${gained}</div></div>
+      <div class="sb b"><div class="h">SỐ THẺ</div><div class="v">${total}</div></div></div>
+      <button class="btn wide" id="fcAgain">HỌC LẠI BỘ THẺ</button>
+      <button class="btn ghost wide" id="fcOther" style="margin-top:10px">CHUYỂN SANG ${fc.deck==='vocab'?'THẺ BÀI HỌC':'THẺ TỪ VỰNG'}</button></div>`;
+    bindDeck();
+    document.getElementById('fcAgain').onclick=()=>{ startFlash(fc.deck); fc.queue=shuffle(fc.queue); drawFlash(); };
+    document.getElementById('fcOther').onclick=()=>{ startFlash(fc.deck==='vocab'?'lesson':'vocab'); drawFlash(); };
+    drawSubjects(); drawStats();
+    return;
+  }
+  const c = fc.cards[fc.queue[0]];
+  body.innerHTML = tabs + `
+    <div class="pbar" style="margin-bottom:12px"><div class="track"><div class="fill" style="width:${fc.known/total*100}%"></div></div></div>
+    <div class="fcmeta"><span>${s.unit} · ĐÃ THUỘC ${fc.known}/${total}</span><span>CÒN ${fc.queue.length} THẺ</span></div>
+    <div class="fcwrap"><div class="fcard ${fc.flipped?'flip':''}" id="fcard">
+      <div class="fface front"><span class="kind">${c.kind}</span>${c.front}<div class="tap">👆 Chạm để lật thẻ</div></div>
+      <div class="fface back"><span class="kind">${c.kind} · MẶT SAU</span>${c.back}</div>
+    </div></div>
+    <div class="fcbtns">
+      <button class="btn red" id="fcNo">CHƯA THUỘC</button>
+      <button class="btn" id="fcYes">ĐÃ THUỘC</button>
+    </div>
+    <div class="fctools"><button id="fcShuf">🔀 TRỘN THẺ</button><button id="fcReset">↺ LÀM LẠI</button></div>`;
+  bindDeck();
+  const card = document.getElementById('fcard');
+  card.onclick = ()=>{ fc.flipped=!fc.flipped; card.classList.toggle('flip', fc.flipped); };
+  document.getElementById('fcYes').onclick=()=>{ fc.queue.shift(); fc.known++; fc.flipped=false; drawFlash(); };
+  document.getElementById('fcNo').onclick=()=>{ const x=fc.queue.shift(); const at=Math.min(fc.queue.length, 3); fc.queue.splice(at,0,x); fc.again++; fc.flipped=false; drawFlash(); };
+  document.getElementById('fcShuf').onclick=()=>{ fc.queue=shuffle(fc.queue); fc.flipped=false; drawFlash(); };
+  document.getElementById('fcReset').onclick=()=>{ startFlash(fc.deck); drawFlash(); };
+}
+function bindDeck(){
+  document.querySelectorAll('[data-deck]').forEach(b=>b.onclick=()=>{ if(b.dataset.deck!==fc.deck){ startFlash(b.dataset.deck); drawFlash(); } });
+}
+
+/* ---------- multiple choice built from the summary ---------- */
+function genSmc(s){
+  const items = [];               // every bold phrase with its point and section
+  s.summary.forEach((sec,si)=>sec.points.forEach(p=>{
+    const re=/<b>(.*?)<\/b>/g; let m;
+    while((m=re.exec(p))){ const t=strip(m[1]); if(t.length>=2 && t.length<=70) items.push({si, p, raw:m[0], t}); }
+  }));
+  const pool = [...new Map(items.map(x=>[norm(x.t),x.t])).values()];
+  const qs = [];
+  // fill-the-gap questions: hide one bold phrase of a summary point
+  for(const it of shuffle(items)){
+    if(qs.length>=7) break;
+    if(qs.some(q=>q.p===it.p)) continue;
+    if(it.p.split(it.raw).length!==2) continue;
+    const others = shuffle(pool.filter(t=>norm(t)!==norm(it.t))).slice(0,3);
+    if(others.length<3) continue;
+    const opts = shuffle([it.t, ...others]);
+    const stem = strip(it.p.replace(it.raw,'§§')).replace('§§','<span class="gap">_____</span>');
+    qs.push({kind:'Điền vào chỗ trống', q:stem, opts, ans:opts.indexOf(it.t), src:it.p, sec:s.summary[it.si].heading, p:it.p});
+  }
+  // which-section questions
+  const heads = s.summary.map(x=>x.heading);
+  const pts = shuffle(s.summary.flatMap((sec,si)=>sec.points.map(p=>({si,p})))).filter(x=>!qs.some(q=>q.p===x.p));
+  for(const x of pts){
+    if(qs.length>=10 || heads.length<4) break;
+    const right = heads[x.si];
+    const opts = shuffle([right, ...shuffle(heads.filter((_,i)=>i!==x.si)).slice(0,3)]);
+    let txt = strip(x.p); if(txt.length>230) txt = txt.slice(0,227)+'…';
+    qs.push({kind:'Ý này thuộc phần nào?', q:`<span style="font-weight:700">“${txt}”</span>`, opts, ans:opts.indexOf(right), src:x.p, sec:right, p:x.p});
+  }
+  return shuffle(qs);
+}
+function drawSmc(){
+  const s = sess(cur), body = document.getElementById('pbody');
+  if(!smc || smc.sid!==s.id) smc = { sid:s.id, qs:genSmc(s), i:0, correct:0, sel:null, checked:false, xp:0 };
+  const Q = smc.qs;
+  if(smc.i >= Q.length){
+    const gained = markDone(s.id,'smc', smc.xp) ? smc.xp : 0;
+    body.innerHTML = `<div class="finish">
+      <div style="font-size:46px">${smc.correct>=Q.length*0.7?'🏆':'💪'}</div>
+      <div class="big">${smc.correct>=Q.length*0.7?'Nắm bài rất chắc!':'Ôn lại tóm tắt nhé!'}</div>
+      <p>${s.title} · đúng ${smc.correct}/${Q.length} câu</p>
+      <div class="scorebox"><div class="sb"><div class="h">XP</div><div class="v">+${gained}</div></div>
+      <div class="sb b"><div class="h">ĐỘ CHÍNH XÁC</div><div class="v">${Math.round(smc.correct/Q.length*100)}%</div></div></div>
+      <button class="btn wide" id="smcAgain">LÀM BỘ CÂU HỎI MỚI</button>
+      <button class="btn ghost wide" id="smcRead" style="margin-top:10px">XEM LẠI TÓM TẮT</button></div>`;
+    document.getElementById('smcAgain').onclick=()=>{ smc=null; drawSmc(); };
+    document.getElementById('smcRead').onclick=()=>{ show('Lesson'); const el=document.getElementById('sec-summary'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+    drawSubjects(); drawPath(); drawStats();
+    return;
+  }
+  const q = Q[smc.i];
+  body.innerHTML = `
+    <div class="pbar"><div class="track"><div class="fill" style="width:${smc.i/Q.length*100}%"></div></div></div>
+    <div class="qtag"><span class="dot">✦</span>${s.unit} · ${q.kind.toUpperCase()} · ${smc.i+1}/${Q.length}</div>
+    <h3 class="qtitle" style="font-size:18px">${q.q}</h3>
+    ${q.opts.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${i+1}</span>${o}</button>`).join('')}
+    <div class="feedback" id="fb"></div>
+    <div class="pfoot"><button class="btn wide" id="check" disabled>KIỂM TRA</button></div>`;
+  const check = document.getElementById('check');
+  body.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(smc.checked) return;
+    body.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); smc.sel=+b.dataset.i; check.disabled=false;
+  });
+  check.onclick=()=>{
+    const ok = smc.sel===q.ans;
+    body.querySelectorAll('.opt').forEach((b,i)=>{ b.classList.remove('sel'); if(i===q.ans) b.classList.add('right'); else if(i===smc.sel) b.classList.add('wrong'); });
+    smc.checked=true; if(ok){ smc.correct++; smc.xp+=5; }
+    const fb=document.getElementById('fb');
+    fb.className='feedback show '+(ok?'ok':'no');
+    fb.innerHTML = `<h4>${ok?'✓ Chính xác!':'✕ Chưa đúng'}</h4><p>${ok?'':`Đáp án đúng: <u>${q.opts[q.ans]}</u><br>`}Phần: ${q.sec}</p><div class="smc-src">${q.src}</div>`;
+    check.textContent='TIẾP TỤC';
+    if(!ok) check.style.background='var(--red)', check.style.boxShadow='0 4px 0 var(--red-d)';
+    check.onclick=()=>{ smc.i++; smc.checked=false; smc.sel=null; drawSmc(); };
+  };
 }
 const norm = t => String(t).normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N} ]/gu,' ').replace(/\s+/g,' ').trim();
 const flat = t => norm(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
 
-function drawQuiz(){
-  const s = sess(cur), Q = s.questions, box = document.getElementById('colPractice');
+function drawExercise(){
+  const s = sess(cur), Q = s.questions, box = document.getElementById('pbody');
 
   if(quiz.i >= Q.length){
     const gained = markDone(s.id,'quiz', quiz.xp) ? quiz.xp : 0;
