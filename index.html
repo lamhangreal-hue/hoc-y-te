@@ -250,7 +250,7 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
 /* ---------- practice modes ---------- */
 .qtitle .gap{color:var(--blue-d);letter-spacing:2px}
 .pmodes{display:flex;gap:6px;margin:0 0 18px;padding:4px;border:2px solid var(--line);border-radius:16px;background:var(--panel)}
-.pmodes button{flex:1;border-radius:12px;padding:9px 6px;font-size:12.5px;font-weight:900;color:var(--ink-3);letter-spacing:.3px;line-height:1.2}
+.pmodes button{flex:1;border-radius:12px;padding:9px 4px;font-size:12px;white-space:nowrap;font-weight:900;color:var(--ink-3);letter-spacing:.3px;line-height:1.2}
 .pmodes button.on{background:#fff;color:var(--blue-d);box-shadow:0 2px 0 var(--line)}
 .deckpick{display:flex;gap:8px;margin-bottom:14px}
 .deckpick button{flex:1;border:2px solid var(--line);border-bottom-width:4px;border-radius:14px;padding:9px;font-size:13px;font-weight:900;color:var(--ink-2);background:#fff}
@@ -284,13 +284,13 @@ button,.node,.tile,.opt{touch-action:manipulation;-webkit-tap-highlight-color:tr
   transition:transform .14s cubic-bezier(.3,.7,.4,1.4),box-shadow .12s,filter .15s,background-color .15s,border-color .15s}
 @media (hover:hover){
   .btn:not(:disabled):hover{transform:translateY(-2px);filter:brightness(1.06)}
-  .opt:hover,.tile:not(.ghosted):hover,.subj:hover,.deckpick button:hover{transform:translateY(-2px);border-bottom-width:5px}
+  .opt:hover,.tile:not(.ghosted):hover,.subj:hover,.deckpick button:hover{transform:translateY(-2px)}
   .pmodes button:hover,.fctools button:hover,.sound-btn:hover{transform:scale(1.06)}
   .node:hover .bubble{transform:translateY(-4px) scale(1.04)}
   .tabs button:hover svg{transform:scale(1.12)}
 }
 .btn:not(:disabled):active{transform:translateY(4px) scale(.98);box-shadow:0 0 0 transparent!important;filter:brightness(.97)}
-.opt:active,.tile:not(.ghosted):active,.subj:active,.deckpick button:active{transform:translateY(3px);border-bottom-width:2px}
+.opt:active,.tile:not(.ghosted):active,.subj:active,.deckpick button:active{transform:translateY(2px) scale(.99)}
 .pmodes button:active,.fctools button:active,.sound-btn:active,.px:active{transform:scale(.92)}
 .node:active .bubble{transform:translateY(5px) scale(.96)}
 .tabs button svg{transition:transform .15s}
@@ -2281,7 +2281,7 @@ function drawLesson(){
   document.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{
     markDone(cur,b.dataset.done,10); drawAll();
   });
-  const openMode = m => { pmode=m; drawQuiz(); show('Practice'); const c=document.getElementById('colPractice'); c.scrollTop=0; if(window.innerWidth>820&&window.innerWidth<=1100) c.scrollIntoView({behavior:'smooth',block:'start'}); };
+  const openMode = m => { if(m!==pmode) switchMode(m); else drawQuiz(); show('Practice'); const c=document.getElementById('colPractice'); c.scrollTop=0; if(window.innerWidth>820&&window.innerWidth<=1100) c.scrollIntoView({behavior:'smooth',block:'start'}); };
   document.getElementById('goPractice').onclick=()=>openMode('quiz');
   document.getElementById('goFlash').onclick=()=>openMode('flash');
   document.getElementById('goSmc').onclick=()=>openMode('smc');
@@ -2293,6 +2293,13 @@ function startQuiz(){
   quiz = { i:0, correct:0, checked:false, sel:null, placed:[], xp:0 };
   pmode = 'quiz'; fc = null; smc = null;
 }
+// leaving a mode after an answer was graded moves on to the next question (the answer is already counted)
+function switchMode(m){
+  if(pmode==='quiz' && quiz && quiz.checked){ quiz.i++; quiz.checked=false; quiz.sel=null; quiz.placed=[]; }
+  if(pmode==='smc' && smc && smc.checked){ smc.i++; smc.checked=false; smc.sel=null; }
+  if(fc) fc.flipped=false;
+  pmode=m; drawQuiz(); drawStats();
+}
 const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 const strip = h => String(h).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
 
@@ -2300,7 +2307,7 @@ function drawQuiz(){
   const box = document.getElementById('colPractice');
   const modes = [['quiz','✦ Bài tập'],['flash','🃏 Flashcard'],['smc','📝 Trắc nghiệm']];
   box.innerHTML = `<div class="pmodes">${modes.map(([m,l])=>`<button data-pm="${m}" class="${pmode===m?'on':''}">${l}</button>`).join('')}</div><div id="pbody"></div>`;
-  box.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{ pmode=b.dataset.pm; drawQuiz(); box.scrollTop=0; });
+  box.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{ if(b.dataset.pm===pmode) return; switchMode(b.dataset.pm); box.scrollTop=0; });
   if(pmode==='flash') return drawFlash();
   if(pmode==='smc') return drawSmc();
   drawExercise();
