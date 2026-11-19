@@ -518,6 +518,15 @@ html[data-theme="dark"] .az-filter button{background:#1e293b;border-color:#47556
   .az-top h2{font-size:15px}
   .az-top .az-hide-m{display:none}
 }
+.az-grid button.cur{outline:3px solid #f59e0b;outline-offset:1px}
+.az-progress{height:10px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin-bottom:12px}
+html[data-theme="dark"] .az-progress{background:#334155}
+.az-progress span{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#16a34a);border-radius:99px;transition:width .3s}
+.az-fb{margin:6px 0 4px;padding:10px 12px;border-radius:10px;font-weight:800;animation:azIn .18s ease-out}
+.az-fb.r{background:#dcfce7;color:#166534}.az-fb.w{background:#fee2e2;color:#991b1b}
+html[data-theme="dark"] .az-fb.r{background:#14532d;color:#bbf7d0}html[data-theme="dark"] .az-fb.w{background:#7f1d1d;color:#fecaca}
+.az-nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+.az-btn:disabled{opacity:.45;cursor:default;transform:none!important;box-shadow:none}
 /* modal */
 .az-modal{position:fixed;inset:0;z-index:950;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:18px}
 .az-modal.open{display:flex}
@@ -2918,11 +2927,53 @@ const AZOTA = {"nckh":[{"id":"gexvhj","name":"Đề 1 – PP NCKH Sức khỏe",
   function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
   function start(i){
     ex=AZOTA[subj][i];
-    run={i, order:shuffle(ex.q.map((_,k)=>k)), ans:{}, done:false, filter:'all'};
+    run={i, order:shuffle(ex.q.map((_,k)=>k)), ans:{}, done:false, filter:'all', cur:0, pick:null};
     drawExam(); root.querySelector('.az-body').scrollTop=0;
   }
 
+  function drawOne(){
+    const n=ex.q.length, answered=Object.keys(run.ans).length;
+    const k=run.order[run.cur], q=ex.q[k], a=run.ans[k], checked=a!==undefined;
+    const right=Object.keys(run.ans).filter(x=>run.ans[x]===ex.q[x].a).length;
+    const st=kk=>run.ans[kk]===undefined?'':(run.ans[kk]===ex.q[kk].a?'r':'w');
+    const last=run.cur===n-1, allDone=answered===n;
+    root.innerHTML=`<div class="az-top"><div class="az-logo">A</div><h2>${esc(ex.name)}<small>Câu ${run.cur+1}/${n} · Đúng ${right}/${answered} · Không giới hạn thời gian</small></h2>
+      <button class="az-btn ok az-hide-m" id="azSubmit">Nộp bài</button><button class="az-btn" id="azBack">✕ Thoát</button></div>
+      <div class="az-body"><div class="az-exam"><div>
+      <div class="az-progress"><span style="width:${answered/n*100}%"></span></div>
+      <div class="az-card az-q"><h4>Câu ${run.cur+1}/${n}${checked?(a===q.a?'<span class="az-tag r">Đúng</span>':'<span class="az-tag w">Sai</span>'):''}</h4>
+        <div class="az-qt">${esc(q.q)}</div>
+        ${q.o.map((o,j)=>{let c='';if(checked){if(j===q.a)c='right';else if(j===a)c='wrong';}else if(j===run.pick)c='sel';
+          return `<button class="az-opt ${c}" data-o="${j}" ${checked?'disabled':''}><span class="az-l">${L[j]}</span><span>${esc(o)}</span></button>`;}).join('')}
+        ${checked?`<div class="az-fb ${a===q.a?'r':'w'}">${a===q.a?'✓ Chính xác!':'✕ Chưa đúng — đáp án đúng là <b>'+L[q.a]+'</b>'}</div>`:''}
+        <div class="az-nav">
+          <button class="az-btn ghost" id="azPrev" ${run.cur===0?'disabled style="visibility:hidden"':''}>← Câu trước</button>
+          ${checked?(allDone?`<button class="az-btn ok" id="azEnd">Xem kết quả</button>`:`<button class="az-btn pri" id="azNext">${last?'Câu chưa làm →':'Câu tiếp theo →'}</button>`)
+                   :`<button class="az-btn pri" id="azCheck" ${run.pick===null?'disabled':''}>Kiểm tra</button>`}
+        </div>
+      </div></div>
+      <div class="az-side" id="azSide"><div class="az-card"><div class="az-sec" style="margin-top:0">Đã làm ${answered}/${n} · Đúng ${right}</div>
+        <div class="az-grid">${run.order.map((kk,pos)=>`<button data-go="${pos}" class="${st(kk)} ${pos===run.cur?'cur':''}">${pos+1}</button>`).join('')}</div>
+        <button class="az-btn ok" style="width:100%;margin-top:12px" id="azSubmit3">Nộp bài</button></div></div>
+      </div></div>
+      <div class="az-mobbar"><span class="az-prog">Câu ${run.cur+1}/${n} · Đúng ${right}</span><button class="az-btn ghost" id="azGrid">☰ Câu hỏi</button><button class="az-btn ok" id="azSubmitM">Nộp bài</button></div>`;
+    const go=pos=>{run.cur=pos;run.pick=null;drawOne();root.querySelector('.az-body').scrollTop=0;};
+    root.querySelector('#azBack').onclick=()=>{sfx('tap');ask('<h3>Thoát bài làm?</h3><p>Bài làm hiện tại sẽ không được lưu.</p>',[{t:'Ở lại',cls:'ghost'},{t:'Thoát',cls:'pri',f:drawList}]);};
+    ['azSubmit','azSubmit3','azSubmitM'].forEach(id=>{const b=root.querySelector('#'+id); if(b) b.onclick=()=>{sfx('tap');submit();};});
+    root.querySelectorAll('.az-opt:not(:disabled)').forEach(b=>b.onclick=()=>{run.pick=+b.dataset.o;sfx('select');
+      root.querySelectorAll('.az-opt').forEach(x=>x.classList.toggle('sel',x===b));const c=root.querySelector('#azCheck');if(c)c.disabled=false;});
+    const ck=root.querySelector('#azCheck'); if(ck) ck.onclick=()=>{if(run.pick===null)return;run.ans[k]=run.pick;sfx(run.pick===q.a?'correct':'wrong');drawOne();
+      const fb=root.querySelector('.az-fb'); if(fb) fb.scrollIntoView({block:'nearest',behavior:'smooth'});};
+    const nx=root.querySelector('#azNext'); if(nx) nx.onclick=()=>{sfx('tap');
+      let p=run.cur+1; if(p>=n||run.ans[run.order[p]]!==undefined){const f=run.order.findIndex((kk,i)=>i>run.cur&&run.ans[kk]===undefined);p=f>=0?f:run.order.findIndex(kk=>run.ans[kk]===undefined);} go(p);};
+    const pv=root.querySelector('#azPrev'); if(pv) pv.onclick=()=>{sfx('tap');go(run.cur-1);};
+    const en=root.querySelector('#azEnd'); if(en) en.onclick=()=>{sfx('tap');finish();};
+    root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{sfx('tap');root.querySelector('#azSide').classList.remove('pop');go(+b.dataset.go);});
+    const gb=root.querySelector('#azGrid'); if(gb) gb.onclick=()=>{sfx('tap');root.querySelector('#azSide').classList.toggle('pop');};
+  }
+
   function drawExam(){
+    if(!run.done) return drawOne();
     const n=ex.q.length, answered=Object.keys(run.ans).length;
     let correct=0; if(run.done) run.order.forEach(k=>{if(run.ans[k]===ex.q[k].a) correct++;});
     const st=k=>run.ans[k]===undefined?'s':(run.ans[k]===ex.q[k].a?'r':'w');
@@ -2969,7 +3020,8 @@ const AZOTA = {"nckh":[{"id":"gexvhj","name":"Đề 1 – PP NCKH Sức khỏe",
 
   function submit(){
     const n=ex.q.length, left=n-Object.keys(run.ans).length;
-    ask(`<h3>Nộp bài?</h3><p>${left?`Bạn còn <b>${left}</b> câu chưa làm.`:'Bạn đã làm hết tất cả các câu.'}</p><p>Sau khi nộp sẽ xem được đáp án và kết quả.</p>`,
+    if(!left){finish();return;}
+    ask(`<h3>Nộp bài?</h3><p>Bạn còn <b>${left}</b> câu chưa làm — các câu này sẽ tính là sai.</p>`,
       [{t:'Làm tiếp',cls:'ghost'},{t:'Nộp bài',cls:'ok',f:finish}]);
   }
   function finish(){
