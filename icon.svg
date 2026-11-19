@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF8EE"/>
+      <stop offset="1" stop-color="#FDEFD9"/>
+    </linearGradient>
+    <clipPath id="blueClip"><circle cx="590" cy="590" r="300"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <!-- red circle (back) -->
+  <circle cx="410" cy="420" r="275" fill="#FF5653"/>
+  <!-- graduation cap on the red circle -->
+  <g transform="translate(300 262) scale(.92)">
+    <path d="M-140 40 L0 -25 L140 40 L0 105 Z" fill="#FFFFFF"/>
+    <path d="M-80 72 V128 C-80 160 80 160 80 128 V72 L0 110 Z" fill="#FFE0DF"/>
+    <path d="M118 50 V128" stroke="#FFC800" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="118" cy="136" r="16" fill="#FFC800"/>
+  </g>
+
+  <!-- blue circle (front) with soft shadow -->
+  <circle cx="598" cy="606" r="300" fill="#3a56d6" opacity=".25"/>
+  <circle cx="590" cy="590" r="300" fill="#5170FF"/>
+
+  <!-- open book on the blue circle -->
+  <g transform="translate(600 625)">
+    <path d="M0 -95 C-60 -135 -150 -140 -215 -115 V95 C-150 70 -60 75 0 115 Z" fill="#FFFFFF"/>
+    <path d="M0 -95 C60 -135 150 -140 215 -115 V95 C150 70 60 75 0 115 Z" fill="#EAF0FF"/>
+    <path d="M0 -95 V115" stroke="#5170FF" stroke-width="10"/>
+    <g stroke="#9DB0FF" stroke-width="12" stroke-linecap="round">
+      <path d="M-165 -70 C-120 -85 -75 -82 -40 -65"/>
+      <path d="M-165 -25 C-120 -40 -75 -37 -40 -20"/>
+      <path d="M-165 20 C-120 5 -75 8 -40 25"/>
+      <path d="M40 -65 C75 -82 120 -85 165 -70"/>
+      <path d="M40 -20 C75 -37 120 -40 165 -25"/>
+      <path d="M40 25 C75 8 120 5 165 20"/>
+    </g>
+  </g>
+
+  <!-- sparkles -->
+  <path d="M815 250 l18 46 46 18 -46 18 -18 46 -18 -46 -46 -18 46 -18 z" fill="#FFC800"/>
+  <path d="M205 760 l11 28 28 11 -28 11 -11 28 -11 -28 -28 -11 28 -11 z" fill="#FFC800"/>
+  <circle cx="860" cy="430" r="14" fill="#FF5653"/>
+</svg>
