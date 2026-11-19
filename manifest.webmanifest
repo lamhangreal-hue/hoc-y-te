@@ -3,7 +3,7 @@
   "short_name": "HBU KTHP",
   "start_url": "./",
   "display": "browser",
-  "background_color": "#FFF8EE",
+  "background_color": "#FFFFFF",
   "theme_color": "#5170FF",
   "icons": [
     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
