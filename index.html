@@ -3108,7 +3108,7 @@ const AZOTA = {"nckh":[{"id":"gexvhj","name":"Đề 1 – PP NCKH Sức khỏe",
 <script>
 /* ================= HEO.AI ================= */
 (function(){
-  const HEO_API = 'https://heo-ai.lamhangreal.workers.dev/';
+  const HEO_API = location.hostname.endsWith('github.io') ? 'https://heo-ai.lamhangreal.workers.dev/' : '';
   const MODEL = 'claude-haiku-5-5';
   const WHY = 'Tại lâm thích qìn nên lâm muốn tạo ra web này cho qìn học tốt hơn';
   const OPENERS = ['Heo đang lèm bèm…','Heo lèm bèm trong miệng là…','Heo vẫy đuôi rồi nói nhỏ…','Heo khịt khịt mũi…','Gâu gâu, Heo nghĩ là…','Heo nghiêng đầu suy nghĩ…'];
